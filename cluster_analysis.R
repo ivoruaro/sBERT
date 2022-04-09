@@ -67,10 +67,39 @@ count(embeddings_k20_complete, cluster) %>%
     )
 
 
-datatable(
-    embeddings_k20_complete %>%
-        select(id, cluster)
-)
-
 embeddings_k20_complete %>%
     select(id, cluster)
+
+
+#### PCA #####
+# Taglio del dendogramma a 10 (arbitrario) significati
+clusters_kx <- cutree(hc_complete, k = 5)
+
+embeddings_kx_complete <- embeddings_sampled %>%
+    mutate(cluster = clusters_kx)
+
+embeddings_pca <- 
+    prcomp(
+        embeddings_sampled[,-1],
+        center = TRUE
+    )
+
+embeddings_reduced <- embeddings_kx_complete %>%
+    mutate(
+        PC1 = embeddings_pca$x[,1],
+        PC2 = embeddings_pca$x[,2]
+    )
+
+embeddings_reduced %>%
+    ggplot(
+        aes(
+            x = PC1,
+            y = PC2,
+            color = factor(cluster)
+        )
+    ) +
+    geom_point(alpha = 0.8) +
+    theme_minimal()
+
+summary(embeddings_pca)
+# PC1 e PC 2 spiegano il (0.08976 + 0.03586) 12.6% dei dati
