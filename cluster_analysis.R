@@ -98,7 +98,7 @@ embeddings_reduced %>%
             color = factor(cluster)
         )
     ) +
-    geom_point(alpha = 0.8) +
+    geom_point(alpha = 0.6, size = 5) +
     theme_minimal()
 
 summary(embeddings_pca)
