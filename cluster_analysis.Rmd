@@ -1,0 +1,180 @@
+---
+title: "Cluster Analisys"
+author: "Ivo Ruaro"
+date: "9/4/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Caricamento dati
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(stylo)
+library(DT)
+
+#### Loading and wrangling data (q&d) ####
+embeddings <- read_csv('embeddings_20k.csv') %>%
+    rename_with(~ paste0("dim", str_pad(.x, 3, pad = '0'))) %>%
+    rename(id = dim0X1) 
+
+embeddings
+
+# Get random rows
+set.seed(1)
+embeddings_sampled <- embeddings %>%
+    slice_sample(n = 1000L)
+```
+Per semplicità dai dati iniziali sono stati estratti 1000 documenti in modo 
+casuale.
+
+## Hierarchical clustering
+```{r, warning=FALSE, message=FALSE}
+#### cosine distance ####
+embeddings_dist_cos <- 
+    dist.cosine(as.matrix(embeddings_sampled[,-1]))
+```
+
+Vista la normalizzazione ad 1 dei vettori la misura naturale è il 
+cosine-similarity.
+Per il momento si esclude l'algoritmo k-means che richiede un misura euclidea.
+
+### Linkage
+Analizzando visivamente i 3 tipi di linkage (complete, single, average), 
+si può vedere che la distribuzione più bilanciata è data dal metodo 'complete'.
+
+```{r, warning=FALSE, message=FALSE, out.width = '100%'}
+hc_complete <- hclust(
+    embeddings_dist_cos,
+    method = "complete"
+)
+plot(hc_complete, main = 'Complete Linkage')
+```
+
+```{r, warning=FALSE, message=FALSE, out.width = '100%'}
+hc_single <- hclust(
+    embeddings_dist_cos,
+    method = "single"
+)
+plot(hc_single, main = 'Single Linkage')
+```
+
+```{r, warning=FALSE, message=FALSE, out.width = '100%'}
+hc_average <- hclust(
+    embeddings_dist_cos,
+    method = "average"
+)
+plot(hc_average, main = 'Average Linkage')
+```
+
+## Riduzione dell'albero
+Scrematura dell'albero di cluster creato precedentemente con il valore di
+numero di cluster fissato (20, 10, 50).  
+Seguito dall'associazione del cluster con il documento originale per 
+un'eventuale analisi manuale.
+
+
+### 20 cluster
+```{r, warning=FALSE, message=FALSE, out.width = '100%'}
+clusters_k20 <- cutree(hc_complete, k = 20)
+
+embeddings_k20_complete <- embeddings_sampled %>%
+    mutate(cluster = clusters_k20)
+
+count(embeddings_k20_complete, cluster) %>%
+    ggplot(
+        aes(
+            x = reorder(cluster, -n),
+            y = n
+        )
+    ) +
+    geom_col() +
+    theme_minimal() +
+    labs(
+        title = 'Distribuzione numero documenti per cluster',
+        x = 'cluster',
+        y = '',
+        caption = 'Campione: 1000 documenti'
+    )
+
+datatable(
+    embeddings_k20_complete %>%
+        select(id, cluster)
+)
+```
+
+### 10 cluster
+```{r, warning=FALSE, message=FALSE, out.width = '100%'}
+clusters_k10 <- cutree(hc_complete, k = 10)
+
+embeddings_k10_complete <- embeddings_sampled %>%
+    mutate(cluster = clusters_k10)
+
+count(embeddings_k10_complete, cluster) %>%
+    ggplot(
+        aes(
+            x = reorder(cluster, -n),
+            y = n
+        )
+    ) +
+    geom_col() +
+    theme_minimal() +
+    labs(
+        title = 'Distribuzione numero documenti per cluster',
+        x = 'cluster',
+        y = '',
+        caption = 'Campione: 1000 documenti'
+    )
+
+datatable(
+    embeddings_k10_complete %>%
+        select(id, cluster)
+)
+
+```
+
+### 50 cluster
+```{r, warning=FALSE, message=FALSE, out.width = '100%'}
+clusters_k50 <- cutree(hc_complete, k = 50)
+
+embeddings_k50_complete <- embeddings_sampled %>%
+    mutate(cluster = clusters_k50)
+
+count(embeddings_k50_complete, cluster) %>%
+    ggplot(
+        aes(
+            x = reorder(cluster, -n),
+            y = n
+        )
+    ) +
+    geom_col() +
+    theme_minimal() +
+    labs(
+        title = 'Distribuzione numero documenti per cluster',
+        x = 'cluster',
+        y = '',
+        caption = 'Campione: 1000 documenti'
+    )
+
+datatable(
+    embeddings_k50_complete %>%
+        select(id, cluster)
+)
+
+```
+
+### Note
+Nei 3 casi precedenti si nota una preponderanza di un cluster di 350 ~ 450 
+documenti a prescindere dal numero di cluster selezionati.
+
+
+## Approfondimenti
+* Analisi con il full set di documenti
+* Verifica del reale raggruppamento dei cluster analizzando a campione i documenti
+* Effettuare topic-modeling sui vari cluster ed analizzarne la variazione al variare 
+  del numero di cluster scelti
+* Applicare PCA per ridurre le dimensioni a 2 ed eseguire un plot per analizzare
+  in modo visuale la separazione dei cluster
