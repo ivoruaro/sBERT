@@ -96,3 +96,57 @@ embeddings_mean %>%
     )
 
 
+#### Analisi riga ####
+embeddings[100,] %>%
+    pivot_longer(everything()) %>%
+    mutate(value = abs(value)) %>%
+    arrange(desc(value)) %>%
+    rowid_to_column("id") %>%
+    ggplot(
+        aes(
+            x = id,
+            y = value
+        )
+    ) +
+    geom_col()
+
+
+#### Boxplot ###
+# 1:49 50:98 99:147 148:196 197:245 246:294 295:343 344:393
+f <- paste0('dim', str_pad(c(9), 3, pad = '0'))
+embeddings %>%
+    pivot_longer(everything()) %>%
+    filter(name %in% f) %>%
+    ggplot(
+        aes(
+            x = 0,
+            y = value,
+            fill = name
+        )
+    ) +
+    #geom_boxplot(fill = 'purple') +
+    geom_violin(alpha=0.2) +
+    geom_jitter(color = "black", size=0.4, alpha=0.2) +
+    theme_minimal() +
+    theme(
+        axis.text.x = element_blank(),
+        legend.position = 'none'
+        ) +
+    facet_wrap( ~ name) +
+    labs(
+        x = '',
+        y = ''
+    )
+
+
+f <- paste0('dim', str_pad(c(27:35), 3, pad = '0'))
+embeddings %>%
+    pivot_longer(everything()) %>%
+    filter(name %in% f) %>%
+    ggplot(
+        aes(
+            x = value
+        )
+    ) +
+    geom_histogram(bins = 500, alpha = 0.5) +
+    facet_wrap(~ name)
